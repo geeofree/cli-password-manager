@@ -1,17 +1,18 @@
-from locker import Locker
+if __name__ == '__main__':
+    from locker import Locker
+    from cmd_prints import print_options, ask_option_number, print_data
 
-pw_manager = Locker()
-data = pw_manager.read()
+    pw_manager = Locker()
+    data = pw_manager.get_locker_data()
 
-obj = {
-    'Google': {
-        'SECRET': 'mynamejeff',
-        'HINT': 'His name is jeff'
-    },
-    'Reddit': {
-        'SECRET': 'iambatman',
-        'HINT': 'He is batman'
-    }
-}
+    print_options()
+    selected_option = ask_option_number()
 
-pw_manager.write(obj)
+    while selected_option != 0:
+        if selected_option == 1:
+            print_data(data)
+        elif selected_option == 5:
+            print_options()
+
+
+        selected_option = ask_option_number()
