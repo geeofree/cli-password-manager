@@ -5,7 +5,7 @@ class Locker:
         self.filename = '%s.txt' % filename
 
 
-    def read(self):
+    def get_locker_data(self):
         """ Reads a locker file via the given filename instance property """
         if os.path.isfile(self.filename):
             file_data = {}
