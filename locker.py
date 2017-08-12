@@ -32,7 +32,7 @@ class Locker:
             return self.read()
 
 
-    def write(self, locker_data):
+    def save(self, locker_data):
         """
             Writes to the file with the password data and metadata
                 locker_data:
