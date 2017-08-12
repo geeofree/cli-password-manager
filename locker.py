@@ -28,8 +28,8 @@ class Locker:
         else:
             # Create the file and try again recursively
             print("No file '%s' found, creating one instead" % self.filename)
-            self.write({})
-            return self.read()
+            self.save({})
+            return self.get_locker_data()
 
 
     def save(self, locker_data):
