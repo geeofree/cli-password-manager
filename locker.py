@@ -3,12 +3,11 @@ import os
 class Locker:
     def __init__(self, filename='locker'):
         self.filename = '%s.txt' % filename
-
+        self.__file_data = {}
 
     def get_locker_data(self):
         """ Reads a locker file via the given filename instance property """
         if os.path.isfile(self.filename):
-            file_data = {}
             curr_parent = ''
 
             with open(self.filename, 'r') as locker_file:
@@ -20,11 +19,11 @@ class Locker:
                         if '\t' in line:
                             metadata = [ metadata.strip() for metadata in line.split(':') ]
                             key, value = metadata[0], metadata[1]
-                            file_data[curr_parent][key] = value
+                            self.__file_data[curr_parent][key] = value
                         else:
                             curr_parent = line
-                            file_data[curr_parent] = {}
-            return file_data
+                            self.__file_data[curr_parent] = {}
+            return self.__file_data
         else:
             # Create the file and try again recursively
             print("No file '%s' found, creating one instead" % self.filename)
