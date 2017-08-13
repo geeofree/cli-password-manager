@@ -13,13 +13,16 @@ def print_options():
 
 def ask_option_number(text="Enter Option Number: "):
     """ Asks for an input printing based on the given parameter text """
-    return int(input(text))
+    try:
+        return int(input(text))
+    except:
+        return input(text)
 
 
 def print_data(data):
     """
         Prints the list of stored password, gives the option to select from said list
-        and returns the data object for valid data selections
+        and prints the password details for valid data selections
     """
     if data:
         data_keys = list(data.keys())
