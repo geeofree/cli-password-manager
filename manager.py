@@ -1,6 +1,6 @@
 if __name__ == '__main__':
     from locker import Locker
-    from cmd_prints import print_options, ask_option_number
+    from cmd import print_options, ask_option_number
 
     pw_manager = Locker()
     data = pw_manager.get_locker_data()
