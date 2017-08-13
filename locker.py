@@ -5,6 +5,7 @@ class Locker:
         self.filename = '%s.txt' % filename
         self.__file_data = {}
 
+
     def get_locker_data(self):
         """ Reads a locker file via the given filename instance property """
         if os.path.isfile(self.filename):
@@ -43,7 +44,7 @@ class Locker:
         data = ''
         data_content = locker_data.items()
 
-        # Check if data is empty
+        # Check if data is not empty
         if data_content:
             for app_name, metadata in data_content:
                 data += app_name + '\n'
