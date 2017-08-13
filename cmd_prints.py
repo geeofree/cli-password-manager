@@ -28,16 +28,22 @@ def print_data(data):
         Enter a number from the list below to show details:
         Press 'c' to cancel
         """)
-        print('\n'.join('\t%i: %s' % (num, app_name) for num, app_name in enumerate(data_keys)))
+        # Print list of stored account passwords
+        print('\n'.join('\t%i: %s' % (index, app_name) for index, app_name in enumerate(data_keys)))
         selected_option = input('\nSelect Password Number: ').lower()
 
-        if selected_option == 'c':
-            return
-        elif int(selected_option) >= len(data_keys):
-            print('Invalid option number\n')
-        else:
-            print(data[data_keys[int(selected_option)]], '\n')
+        # Try-Except whether the given selected_option is a valid index on data_keys
+        try:
+            index = int(selected_option)
+            pw_account = data_keys[index]
+            pw_details = data[pw_account]
+            print("\n\tPASSWORD_FOR: %s" % pw_account)
+            [ print("\t%s: %s" % (key, value)) for key, value in pw_details.items() ]
+            print("\n")
+        except:
+            if selected_option.isalpha() and selected_option == 'c':
+                return
+            else:
+                print("\n\tInvalid option number\n")
     else:
-        print("""
-        No Password Stored Yet.
-        """)
+        print("\n\tNo passwords currently stored.\n")
