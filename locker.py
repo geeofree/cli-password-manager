@@ -76,18 +76,21 @@ class Locker:
 
 
     @staticmethod
-    def ask_option_number(text="[Enter Option Number]: "):
+    def ask_option(data_keys=None, title_text=None, input_text="Enter Option Number"):
         """ Asks for an input printing based on the given parameter text """
+
+        if title_text != None:
+            print("\n\t%s:\n\tPress 'c' to cancel\n" % title_text)
+        if data_keys:
+            print("\n".join("\t%i: %s" % (index, app_name) for index, app_name in enumerate(data_keys)))
+            print("\n")
+
+        input_value = input("[%s]: " % input_text)
+
         try:
-            return int(input(text))
+            return int(input_value)
         except:
-            return input(text)
-
-
-
-    @staticmethod
-    def print_data_keys(data_keys):
-        print('\n'.join('\t%i: %s' % (index, app_name) for index, app_name in enumerate(data_keys)))
+            return input_value.lower()
 
 
 
@@ -99,7 +102,7 @@ class Locker:
 
             if should_encrypt.isalpha():
                 if should_encrypt == 'c':
-                    print("===CANCELED===")
+                    print("\n\t===CANCELED===\n")
                     return
                 elif should_encrypt in 'yn':
                     clsmethod(self, should_encrypt, *args, **kwargs)
@@ -150,11 +153,11 @@ class Locker:
 
                     # Bcrypt hash encrypt the secret password
                     secret = bcrypt.hashpw(str.encode(secret), bcrypt.gensalt()).decode()
-                    app["HINT"] = hint
+                    app["HINT"] = '"%s"' % hint
 
                 app["SECRET"] = secret
-                print("\n\tPASSWORD_FOR: %s" % app_name)
-                [ print("\t%s: %s" % (key, value)) for key, value in app.items() ]
+                print("\n\t%s Details" % app_name)
+                [ print("\t===%s: %s" % (key, value)) for key, value in app.items() ]
                 should_store = input("\n\t[Store this password? Y/N/C]: ").lower()
 
                 # Repeat should_store input question if invalid answer
@@ -172,10 +175,10 @@ class Locker:
                         # Save data if yes
                         if should_store == 'y':
                             self.save(data)
-                            print("===SAVE SUCCESS===")
+                            print("\n\t===SAVE SUCCESS===\n")
                         # Exit Password Detail gathering if canceled
                         elif should_store == 'c':
-                            print('===CANCELED===')
+                            print('\n\t===CANCELED===\n')
         return wrapper
 
 
@@ -186,21 +189,25 @@ class Locker:
             Prints the list of stored password, gives the option to select from said list
             and prints the password details for valid data selections
         """
-        print("\n\tEnter a number from the list below to show details:\n\tPress 'c' to cancel\n")
-        self.print_data_keys(data_keys)
-        selected_option = input('\n[Select password details for]: ').lower()
+
+        print("\n\t[[ PASSWORD LIST ]]\n")
+
+        selected_option = self.ask_option(
+            data_keys,
+            title_text="Enter a number from the list below to SHOW details",
+            input_text="Show password details for"
+        )
 
         # Try-Except whether the given selected_option is a valid index on data_keys
         try:
-            index = int(selected_option)
-            app_name = data_keys[index]
+            app_name = data_keys[selected_option]
             app = data[app_name]
-            print("\n\tPASSWORD_FOR: %s" % app_name)
-            [ print("\t%s: %s" % (key, value)) for key, value in app.items() ]
+            print("\n\t%s Details" % app_name)
+            [ print("\t===%s: %s" % (key, value)) for key, value in app.items() ]
             print("\n")
         except Exception as error:
-            if selected_option.isalpha() and selected_option == 'c':
-                print("===CANCELED===")
+            if str(selected_option).isalpha() and selected_option == 'c':
+                print("\n\t===CANCELED===\n")
             else:
                 print("\n\tInvalid option number\n")
 
@@ -210,11 +217,11 @@ class Locker:
     @__pwdetails
     def __save_pw_data(self, data, app_name):
         """ Auxiliary Function for add_password that does the true adding work """
-        app_name = input("\n\t[Where is this password used for?]: ").title()
+        app_name = input("\n\t[Where is this password used on?]: ").title()
 
         while len(app_name) < 3:
             print("\n\tUSAGE NAME MUST NOT BE LESS THAN 3 CHARACTERS")
-            app_name = input("\n\t[Where is this password used for?]: ").title()
+            app_name = input("\n\t[Where is this password used on?]: ").title()
 
         # Print an error and return None when the application name has already been stored
         if app_name in data:
@@ -233,25 +240,61 @@ class Locker:
 
     def add_password(self):
         """ Adds a new password data to the locker """
+        print("\n\t[[ ADD A NEW PASSWORD ]]")
         self.__save_pw_data()
 
 
 
     @__datacheck(error_text="No Password stored to edit.")
     def edit_password(self, data, data_keys):
-        """ Edit a password selected from the list """
+        """ Edit a password selected from the list of available passwords on the locker file """
 
-        print("\n\tEnter a number from the list below to edit the details:\n\tPress 'c' to cancel\n")
-        self.print_data_keys(data_keys)
-        selected_option = input('\n[Edit password details for]: ').lower()
+        print("\n\t[[ EDIT A PASSWORD ]]")
+
+        selected_option = self.ask_option(
+            data_keys,
+            title_text="Enter a number from the list below to EDIT the details",
+            input_text="Edit password details for"
+        )
 
         # Try-Except whether the given selected_option is a valid index on data_keys
         try:
-            index = int(selected_option)
-            app_name = data_keys[index]
+            app_name = data_keys[selected_option]
             self.__edit_pw_data(app_name)
         except Exception as error:
-            if selected_option.isalpha() and selected_option == 'c':
+            if str(selected_option).isalpha() and selected_option == 'c':
                 print("===CANCELED===")
+            else:
+                print("\n\tInvalid option number\n")
+
+
+
+    @__datacheck(error_text="No Password stored to delete.")
+    def delete_password(self, data, data_keys):
+        """ Edit a password selected from the list of available passwords on the locker file """
+
+        print("\n\t[[ DELETE A PASSWORD ]]")
+
+        selected_option = self.ask_option(
+            data_keys,
+            title_text="Enter a number from the list below to DELETE",
+            input_text="Delete Password"
+        )
+
+        try:
+            app_name = data_keys[selected_option]
+            confirm = self.ask_option(input_text="Are you sure you want to delete %s? Y/N" % app_name)
+
+            if confirm == 'y':
+                del data[app_name]
+                self.save(data)
+                print("\n\t===DELETE SUCCESS===\n")
+            elif confirm == 'n':
+                return
+            else:
+                print("\n\tInvalid Confirmation Answer\n")
+        except Exception as error:
+            if str(selected_option).isalpha() and selected_option == 'c':
+                print("\n\t===CANCELED===\n")
             else:
                 print("\n\tInvalid option number\n")
