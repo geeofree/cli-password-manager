@@ -7,6 +7,7 @@ class Locker:
         self.__file_data = {}
 
 
+
     def get_locker_data(self):
         """ Reads a locker file via the given filename instance property """
         if os.path.isfile(self.filename):
@@ -33,6 +34,7 @@ class Locker:
             return self.get_locker_data()
 
 
+
     def save(self, locker_data):
         """
             Writes to the file with the password data and metadata
@@ -55,6 +57,7 @@ class Locker:
             locker_file.write(data)
 
 
+
     @staticmethod
     def print_options():
         """ Prints the Password Manager Options """
@@ -69,6 +72,7 @@ class Locker:
         """)
 
 
+
     @staticmethod
     def ask_option_number(text="[Enter Option Number]: "):
         """ Asks for an input printing based on the given parameter text """
@@ -78,36 +82,53 @@ class Locker:
             return input(text)
 
 
-    def print_data(self):
+
+    @staticmethod
+    def print_data_keys(data_keys):
+        print('\n'.join('\t%i: %s' % (index, app_name) for index, app_name in enumerate(data_keys)))
+
+
+
+    def __data_check(error_text):
+        """ Method Decorator that validates whether the locker file has data on it """
+        def decorator(locker_clsmethod):
+            def wrapper(self, *args, **kwargs):
+                data = self.__file_data
+                if data:
+                    data_keys = list(data.keys())
+                    locker_clsmethod(self, data, data_keys, *args, **kwargs)
+                else:
+                    print("\n\t%s\n" % error_text)
+
+            return wrapper
+        return decorator
+
+
+
+    @__data_check(error_text="No Passwords currently stored to show.")
+    def print_data(self, data, data_keys):
         """
             Prints the list of stored password, gives the option to select from said list
             and prints the password details for valid data selections
         """
-        data = self.__file_data
+        print("\n\tEnter a number from the list below to show details:\n\tPress 'c' to cancel\n")
+        self.print_data_keys(data_keys)
+        selected_option = input('\n[Select password details for]: ').lower()
 
-        if data:
-            data_keys = list(data.keys())
+        # Try-Except whether the given selected_option is a valid index on data_keys
+        try:
+            index = int(selected_option)
+            pw_account = data_keys[index]
+            pw_details = data[pw_account]
+            print("\n\tPASSWORD_FOR: %s" % pw_account)
+            [ print("\t%s: %s" % (key, value)) for key, value in pw_details.items() ]
+            print("\n")
+        except:
+            if selected_option.isalpha() and selected_option == 'c':
+                print("===CANCELED===")
+            else:
+                print("\n\tInvalid option number\n")
 
-            print("\n\tEnter a number from the list below to show details:\n\tPress 'c' to cancel\n")
-            # Print list of stored account passwords
-            print('\n'.join('\t%i: %s' % (index, app_name) for index, app_name in enumerate(data_keys)))
-            selected_option = input('\n[Select password details for]: ').lower()
-
-            # Try-Except whether the given selected_option is a valid index on data_keys
-            try:
-                index = int(selected_option)
-                pw_account = data_keys[index]
-                pw_details = data[pw_account]
-                print("\n\tPASSWORD_FOR: %s" % pw_account)
-                [ print("\t%s: %s" % (key, value)) for key, value in pw_details.items() ]
-                print("\n")
-            except:
-                if selected_option.isalpha() and selected_option == 'c':
-                    return
-                else:
-                    print("\n\tInvalid option number\n")
-        else:
-            print("\n\tNo passwords currently stored.\n")
 
 
     def _add_password_data(self, should_encrypt='y'):
@@ -180,6 +201,7 @@ class Locker:
                 return
 
 
+
     def add_password(self):
         """ Adds a new password data to the locker """
         print("\n\tDo you want the password to be encrypted? [Y/N]\n\tPress 'c' to cancel")
@@ -194,3 +216,10 @@ class Locker:
                 self._add_password_data(selected_option)
         else:
             print("\n\tInvalid Answer: Must be [Y/N/C]\n")
+
+
+
+    @__data_check(error_text="No Passwords stored to edit.")
+    def edit_password(self, data, data_keys):
+        """ Edit a password selected from the list """
+        print("Working!")
