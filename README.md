@@ -1,4 +1,4 @@
-# cli-password-manager :shipit::+1:  
+# cli-password-manager :100::ok_hand::sweat_drops:  
 
 A simple CLI/CMD password manager that CRUDs your password storage needs!  
 
