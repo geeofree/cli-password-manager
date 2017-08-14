@@ -1,5 +1,6 @@
 import os
 import bcrypt
+import copy
 
 class Locker:
     def __init__(self, filename='locker'):
@@ -45,6 +46,7 @@ class Locker:
         """
         data = ''
         data_content = locker_data.items()
+        self.__file_data = locker_data
 
         # Check if data is not empty
         if data_content:
@@ -89,23 +91,96 @@ class Locker:
 
 
 
-    def __data_check(error_text):
+    def __encryptpass(clsmethod):
+        """ Method decorator for validating if a password should be encrypted or not """
+        def wrapper(self, *args, **kwargs):
+            print("\n\tDo you want the password to be encrypted? [Y/N]\n\tPress 'c' to cancel")
+            should_encrypt = input("\n[Encrypt Password?]: ").lower()
+
+            if should_encrypt.isalpha():
+                if should_encrypt == 'c':
+                    print("===CANCELED===")
+                    return
+                elif should_encrypt in 'yn':
+                    clsmethod(self, should_encrypt, *args, **kwargs)
+                else:
+                    print("\n\tInvalid Answer: Must be  Y/N/C\n")
+            else:
+                print("\n\tInvalid Answer: Must be  Y/N/C\n")
+        return wrapper
+
+
+
+    def __datacheck(error_text):
         """ Method Decorator that validates whether the locker file has data on it """
-        def decorator(locker_clsmethod):
+        def decorator(clsmethod):
             def wrapper(self, *args, **kwargs):
                 data = self.__file_data
                 if data:
                     data_keys = list(data.keys())
-                    locker_clsmethod(self, data, data_keys, *args, **kwargs)
+                    clsmethod(self, data, data_keys, *args, **kwargs)
                 else:
                     print("\n\t%s\n" % error_text)
-
             return wrapper
         return decorator
 
 
 
-    @__data_check(error_text="No Passwords currently stored to show.")
+    def __pwdetails(clsmethod):
+        """ Method Decorator that handles logic for password detail gathering and saving the data """
+        def wrapper(self, should_encrypt, app_name=None, *args, **kwargs):
+            data = copy.deepcopy(self.__file_data)
+            app_name = app_name or clsmethod(self, data, app_name, *args, **kwargs)
+
+            if app_name != None:
+                data[app_name] = {}
+                app = data[app_name]
+                secret = input("\n\t[Enter desired password]: ")
+
+                while len(secret) < 3:
+                    print("\n\tPASSWORD MUST NOT BE LESS THAN 3 CHARACTERS")
+                    secret = input("\n\t[Enter desired password]: ")
+
+                if should_encrypt == 'y':
+                    hint = input("\n\t[Enter Password Hint]: ")
+
+                    while len(hint) < 3:
+                        print("\n\tHINT MUST NOT BE LESS THAN 3 CHARACTERS")
+                        hint = input("\n\t[Enter Password Hint]: ")
+
+                    # Bcrypt hash encrypt the secret password
+                    secret = bcrypt.hashpw(str.encode(secret), bcrypt.gensalt()).decode()
+                    app["HINT"] = hint
+
+                app["SECRET"] = secret
+                print("\n\tPASSWORD_FOR: %s" % app_name)
+                [ print("\t%s: %s" % (key, value)) for key, value in app.items() ]
+                should_store = input("\n\t[Store this password? Y/N/C]: ").lower()
+
+                # Repeat should_store input question if invalid answer
+                while should_store not in 'ync':
+                    should_store = input("\n\t[Store this password? Y/N/C]: ").lower()
+                else:
+                    # Delete created password detail if canceled or should not be stored
+                    if should_store in 'nc':
+                        del data[app_name]
+
+                    # Repeat Password Detail gathering if No by recursing
+                    if should_store == 'n':
+                        return wrapper(self, should_encrypt, app_name)
+                    else:
+                        # Save data if yes
+                        if should_store == 'y':
+                            self.save(data)
+                            print("===SAVE SUCCESS===")
+                        # Exit Password Detail gathering if canceled
+                        elif should_store == 'c':
+                            print('===CANCELED===')
+        return wrapper
+
+
+
+    @__datacheck(error_text="No Password stored to show.")
     def print_data(self, data, data_keys):
         """
             Prints the list of stored password, gives the option to select from said list
@@ -118,12 +193,12 @@ class Locker:
         # Try-Except whether the given selected_option is a valid index on data_keys
         try:
             index = int(selected_option)
-            pw_account = data_keys[index]
-            pw_details = data[pw_account]
-            print("\n\tPASSWORD_FOR: %s" % pw_account)
-            [ print("\t%s: %s" % (key, value)) for key, value in pw_details.items() ]
+            app_name = data_keys[index]
+            app = data[app_name]
+            print("\n\tPASSWORD_FOR: %s" % app_name)
+            [ print("\t%s: %s" % (key, value)) for key, value in app.items() ]
             print("\n")
-        except:
+        except Exception as error:
             if selected_option.isalpha() and selected_option == 'c':
                 print("===CANCELED===")
             else:
@@ -131,95 +206,52 @@ class Locker:
 
 
 
-    def _add_password_data(self, should_encrypt='y'):
+    @__encryptpass
+    @__pwdetails
+    def __save_pw_data(self, data, app_name):
         """ Auxiliary Function for add_password that does the true adding work """
-        data = self.__file_data
         app_name = input("\n\t[Where is this password used for?]: ").title()
 
         while len(app_name) < 3:
             print("\n\tUSAGE NAME MUST NOT BE LESS THAN 3 CHARACTERS")
             app_name = input("\n\t[Where is this password used for?]: ").title()
 
-        # Print an error that the application name has already been stored
+        # Print an error and return None when the application name has already been stored
         if app_name in data:
             print("\n\tAbort: You already have a password stored for '%s'" % app_name)
-            return
-
-        data[app_name] = {}
-        app = data[app_name]
-
-        def encryptor(should_encrypt):
-            def wrapper(func):
-                def inner(*args, **kwargs):
-                    secret = func(*args, **kwargs)
-
-                    while len(secret) < 3:
-                        print("\n\tPASSWORD MUST NOT BE LESS THAN 3 CHARACTERS")
-                        secret = func(*args, **kwargs)
-
-                    if should_encrypt == 'y':
-                        hint = input("\n\t[Enter Password Hint]: ")
-
-                        while len(hint) < 3:
-                            print("\n\tHINT MUST NOT BE LESS THAN 3 CHARACTERS")
-                            hint = input("\n\t[Enter Password Hint]: ")
-
-                        # Bcrypt hash encrypt the secret password
-                        secret = bcrypt.hashpw(str.encode(secret), bcrypt.gensalt()).decode()
-                        app["HINT"] = hint
-
-                    app["SECRET"] = secret
-                    print("\n\tPASSWORD_FOR: %s" % app_name)
-                    [ print("\t%s: %s" % (key, value)) for key, value in app.items() ]
-                    should_store = input("\n\t[Store this password?[Y/N/C]]: ").lower()
-
-                    while should_store not in 'ync':
-                        should_store = input("[Store this password?[Y/N/C]]: ").lower()
-                    else:
-                        # Delete created password detail if canceled or should not be stored
-                        if should_store in 'nc':
-                            del data[app_name]
-                    return should_store
-                return inner
-            return wrapper
-
-        @encryptor(should_encrypt)
-        def pw_details():
-            return input("\n\t[Enter desired password]: ")
-
-        should_store = pw_details()
-
-        while should_store == 'n':
-            return self._add_password_data(should_encrypt)
         else:
-            if should_store == 'y':
-                self.save(data)
-                print("===SAVE SUCCESS===")
-                return
-            elif should_store == 'c':
-                print('===CANCELED===')
-                return
+            return app_name
+
+
+    @__encryptpass
+    @__pwdetails
+    def __edit_pw_data(self, data, app_name):
+        """ Auxiliary Function for edit_password """
+        return app_name
 
 
 
     def add_password(self):
         """ Adds a new password data to the locker """
-        print("\n\tDo you want the password to be encrypted? [Y/N]\n\tPress 'c' to cancel")
-        selected_option = input("\n[Encrypt Password?]: ").lower()
-
-        if selected_option.isalpha():
-            if selected_option == 'c':
-                return
-            elif selected_option not in 'ync':
-                print("\n\tInvalid Answer: Must be [Y/N/C]\n")
-            else:
-                self._add_password_data(selected_option)
-        else:
-            print("\n\tInvalid Answer: Must be [Y/N/C]\n")
+        self.__save_pw_data()
 
 
 
-    @__data_check(error_text="No Passwords stored to edit.")
+    @__datacheck(error_text="No Password stored to edit.")
     def edit_password(self, data, data_keys):
         """ Edit a password selected from the list """
-        print("Working!")
+
+        print("\n\tEnter a number from the list below to edit the details:\n\tPress 'c' to cancel\n")
+        self.print_data_keys(data_keys)
+        selected_option = input('\n[Edit password details for]: ').lower()
+
+        # Try-Except whether the given selected_option is a valid index on data_keys
+        try:
+            index = int(selected_option)
+            app_name = data_keys[index]
+            self.__edit_pw_data(app_name)
+        except Exception as error:
+            if selected_option.isalpha() and selected_option == 'c':
+                print("===CANCELED===")
+            else:
+                print("\n\tInvalid option number\n")
