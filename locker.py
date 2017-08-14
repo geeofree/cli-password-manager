@@ -176,7 +176,7 @@ class Locker:
                 print("===SAVE SUCCESS===")
                 return
             elif should_store == 'c':
-                print('canceled')
+                print('===CANCELED===')
                 return
 
 
