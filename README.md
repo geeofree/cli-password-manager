@@ -15,4 +15,4 @@ These instructions will help you get a copy of the project and have it up and ru
 `python manager.py`  
 
 If all goes well your terminal should now look something like this:  
-![working example]('README/sample.png')
+![working example]('/README/sample.png')
