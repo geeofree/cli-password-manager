@@ -12,4 +12,7 @@ These instructions will help you get a copy of the project and have it up and ru
 `cd cli-password-manager || [optional_name]`  
 
 ### Run the script  
-`python manager.py`
+`python manager.py`  
+
+If all goes well your terminal should now look something like this:  
+![working example]('README/sample.png')
